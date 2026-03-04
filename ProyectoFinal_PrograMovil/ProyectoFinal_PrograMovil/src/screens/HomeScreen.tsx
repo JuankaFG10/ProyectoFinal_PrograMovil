@@ -1,0 +1,98 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/StackNavigator';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase, MOCK_MODE, mockSupabase } from '../lib/supabase';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+const HomeScreen = () => {
+  const { user } = useAuth();
+  const navigation = useNavigation<Nav>();
+  const [totalVisits, setTotalVisits] = useState(0);
+  const [todayVisits, setTodayVisits] = useState(0);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    if (MOCK_MODE) {
+      setTotalVisits(3);
+      setTodayVisits(1);
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+
+    const { count: total } = await supabase
+      .from('visits')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: todayCount } = await supabase
+      .from('visits')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', `${today}T00:00:00`);
+
+    setTotalVisits(total ?? 0);
+    setTodayVisits(todayCount ?? 0);
+  };
+
+  const QuickAction = ({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) => (
+    <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.8}>
+      <Text style={styles.actionIcon}>{icon}</Text>
+      <Text style={styles.actionLabel}>{label}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.greeting}>Bienvenido 👋</Text>
+      <Text style={styles.email}>{user?.email}</Text>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{todayVisits}</Text>
+          <Text style={styles.statLabel}>Hoy</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{totalVisits}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+      </View>
+
+      <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+      <View style={styles.actionsGrid}>
+        <QuickAction icon="📝" label="Registrar Visita" onPress={() => navigation.navigate('RegisterVisit')} />
+        <QuickAction icon="📷" label="Escanear QR" onPress={() => navigation.navigate('ScanQR')} />
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F1F5F9' },
+  content: { padding: 24 },
+  greeting: { fontSize: 24, fontWeight: '700', color: '#1E293B' },
+  email: { fontSize: 14, color: '#64748B', marginBottom: 24 },
+  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 28 },
+  statCard: {
+    flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12,
+    padding: 20, alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  statNumber: { fontSize: 36, fontWeight: '800', color: '#2563EB' },
+  statLabel: { fontSize: 13, color: '#64748B', marginTop: 4 },
+  sectionTitle: { fontSize: 17, fontWeight: '600', color: '#334155', marginBottom: 12 },
+  actionsGrid: { flexDirection: 'row', gap: 12 },
+  action: {
+    flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12,
+    padding: 20, alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  actionIcon: { fontSize: 32, marginBottom: 8 },
+  actionLabel: { fontSize: 13, fontWeight: '600', color: '#334155', textAlign: 'center' },
+});
+
+export default HomeScreen;
