@@ -48,7 +48,7 @@ const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.greeting}>Bienvenido 👋</Text>
+      <Text style={styles.greeting}>Bienvenido</Text>
       <Text style={styles.email}>{user?.email}</Text>
 
       <View style={styles.statsRow}>
@@ -65,7 +65,7 @@ const HomeScreen = () => {
       <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
       <View style={styles.actionsGrid}>
         <QuickAction icon="📝" label="Registrar Visita" onPress={() => navigation.navigate('RegisterVisit')} />
-        <QuickAction icon="📷" label="Escanear QR" onPress={() => navigation.navigate('ScanQR')} />
+        
       </View>
     </ScrollView>
   );

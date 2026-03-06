@@ -43,7 +43,7 @@ const ProfileScreen = () => {
                 style={[styles.langText, locale === lang && styles.langActiveText]}
                 onPress={() => setLocale(lang)}
               >
-                {lang === 'es' ? '🇬🇹 Español' : '🇺🇸 English'}
+                {lang === 'es' ? 'Español' : 'English'}
               </Text>
             </View>
           ))}

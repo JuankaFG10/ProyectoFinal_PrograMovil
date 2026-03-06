@@ -14,7 +14,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Cliente simulado para pruebas de navegación sin API
 const mockVisits = [
-  { id: '1', name: 'Ana García', id_number: '2134 56789 0101', house: 'A-1', reason: 'Visita familiar', status: 'approved', created_at: new Date().toISOString() },
+  { id: '1', name: 'Ana Garcia', id_number: '2134 56789 0101', house: 'A-1', reason: 'Visita familiar', status: 'approved', created_at: new Date().toISOString() },
   { id: '2', name: 'Luis Pérez', id_number: '3001 12345 6789', house: 'B-12', reason: 'Entrega de paquete', status: 'pending', created_at: new Date(Date.now() - 3600000).toISOString() },
   { id: '3', name: 'María López', id_number: '1590 00011 2233', house: 'C-5', reason: 'Técnico de internet', status: 'denied', created_at: new Date(Date.now() - 7200000).toISOString() },
 ];
