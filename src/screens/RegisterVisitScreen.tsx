@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, ScrollView, Modal } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { supabase, MOCK_MODE } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import { useNavigation } from '@react-navigation/native';
+import { useAppDispatch } from '../store/hooks';
+import { addVisit } from '../store/slices/visitSlice';
 
 const RegisterVisitScreen = () => {
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
   const [name, setName] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [house, setHouse] = useState('');
@@ -24,14 +27,7 @@ const RegisterVisitScreen = () => {
 
     try {
       setLoading(true);
-
-      if (MOCK_MODE) {
-        const mockId = Math.random().toString(36).slice(2);
-        const qrData = JSON.stringify({ id: mockId, name, house });
-        setQrValue(qrData);
-        setShowQR(true);
-        return;
-      }
+      console.log('[Redux] RegisterVisitScreen - registrando nueva visita:', name);
 
       const { data, error } = await supabase
         .from('visits')
@@ -41,7 +37,10 @@ const RegisterVisitScreen = () => {
 
       if (error) throw error;
 
-      // Generate QR data with visit ID
+      // useDispatch - agrega la visita al estado global de Redux
+      dispatch(addVisit(data));
+      console.log('[Redux] RegisterVisitScreen - visita agregada al estado global:', data.id);
+
       const qrData = JSON.stringify({ id: data.id, name: data.name, house: data.house });
       setQrValue(qrData);
       setShowQR(true);
@@ -63,7 +62,6 @@ const RegisterVisitScreen = () => {
 
       <CustomButton title="Registrar y Generar QR" onPress={handleRegister} loading={loading} />
 
-      {/* QR Modal */}
       <Modal visible={showQR} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>

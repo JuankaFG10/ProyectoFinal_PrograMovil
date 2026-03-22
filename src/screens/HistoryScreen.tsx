@@ -1,50 +1,51 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-import { supabase, MOCK_MODE, mockSupabase } from '../lib/supabase';
-
-interface Visit {
-  id: string;
-  name: string;
-  house: string;
-  created_at: string;
-  status: string;
-}
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setVisits, setLoading } from '../store/slices/visitSlice';
+import { supabase } from '../lib/supabase';
 
 const HistoryScreen = () => {
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+
+  // useSelector - lee las visitas directamente del estado global de Redux
+  const visits = useAppSelector(state => state.visits.list);
+  const loading = useAppSelector(state => state.visits.loading);
 
   useEffect(() => {
-    fetchHistory();
+    // Si ya hay datos en Redux no vuelve a consultar Supabase
+    if (visits.length === 0) {
+      fetchHistory();
+    } else {
+      console.log('[Redux] HistoryScreen - datos ya en estado global, no se consulta Supabase:', visits.length, 'visitas');
+    }
   }, []);
 
   const fetchHistory = async () => {
-    setLoading(true);
-    if (MOCK_MODE) {
-      setVisits([
-        { id: '1', name: 'Ana García', house: 'A-1', status: 'approved', created_at: new Date().toISOString() },
-        { id: '2', name: 'Luis Pérez', house: 'B-12', status: 'pending', created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: '3', name: 'María López', house: 'C-5', status: 'denied', created_at: new Date(Date.now() - 7200000).toISOString() },
-      ]);
-      setLoading(false);
-      return;
-    }
+    dispatch(setLoading(true));
+    console.log('[Redux] HistoryScreen - estado vacío, consultando Supabase...');
+
     const { data, error } = await supabase
       .from('visits')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (!error) setVisits(data ?? []);
-    setLoading(false);
+    if (!error) {
+      dispatch(setVisits(data ?? []));
+      console.log('[Redux] HistoryScreen - estado global actualizado con', data?.length, 'visitas');
+    }
+    dispatch(setLoading(false));
   };
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleDateString('es-GT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('es-GT', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
   };
 
-  const renderItem = ({ item }: { item: Visit }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardLeft}>
         <Text style={styles.name}>{item.name}</Text>
@@ -52,7 +53,9 @@ const HistoryScreen = () => {
         <Text style={styles.date}>🕐 {formatDate(item.created_at)}</Text>
       </View>
       <View style={[styles.badge, item.status === 'approved' ? styles.approved : styles.pending]}>
-        <Text style={styles.badgeText}>{item.status === 'approved' ? '✓ Aprobado' : '⏳ Pendiente'}</Text>
+        <Text style={styles.badgeText}>
+          {item.status === 'approved' ? '✓ Aprobado' : '⏳ Pendiente'}
+        </Text>
       </View>
     </View>
   );

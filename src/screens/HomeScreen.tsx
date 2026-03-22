@@ -1,42 +1,51 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, MOCK_MODE, mockSupabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setVisits, setLoading } from '../store/slices/visitSlice';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
   const { user } = useAuth();
   const navigation = useNavigation<Nav>();
-  const [totalVisits, setTotalVisits] = useState(0);
-  const [todayVisits, setTodayVisits] = useState(0);
+  const dispatch = useAppDispatch();
+
+  // useSelector - lee el estado global de Redux
+  const visits = useAppSelector(state => state.visits.list);
+  const loading = useAppSelector(state => state.visits.loading);
+
+  // Calcular estadísticas desde el estado de Redux
+  const today = new Date().toISOString().split('T')[0];
+  const todayVisits = visits.filter(v => v.created_at.startsWith(today)).length;
+  const totalVisits = visits.length;
 
   useEffect(() => {
-    fetchStats();
+    fetchVisits();
   }, []);
 
-  const fetchStats = async () => {
-    if (MOCK_MODE) {
-      setTotalVisits(3);
-      setTodayVisits(1);
-      return;
+  const fetchVisits = async () => {
+    dispatch(setLoading(true));
+    console.log('[Redux] HomeScreen - cargando visitas al estado global...');
+
+    const { data, error } = await supabase
+      .from('visits')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      // useDispatch - actualiza el estado global con todas las visitas
+      dispatch(setVisits(data ?? []));
+      console.log('[Redux] HomeScreen - estado global actualizado:', {
+        total: data?.length,
+        hoy: data?.filter(v => v.created_at.startsWith(today)).length,
+      });
     }
-    const today = new Date().toISOString().split('T')[0];
-
-    const { count: total } = await supabase
-      .from('visits')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: todayCount } = await supabase
-      .from('visits')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', `${today}T00:00:00`);
-
-    setTotalVisits(total ?? 0);
-    setTodayVisits(todayCount ?? 0);
+    dispatch(setLoading(false));
   };
 
   const QuickAction = ({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) => (
@@ -48,7 +57,7 @@ const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.greeting}>Bienvenido</Text>
+      <Text style={styles.greeting}>Bienvenido 👋</Text>
       <Text style={styles.email}>{user?.email}</Text>
 
       <View style={styles.statsRow}>
@@ -65,7 +74,7 @@ const HomeScreen = () => {
       <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
       <View style={styles.actionsGrid}>
         <QuickAction icon="📝" label="Registrar Visita" onPress={() => navigation.navigate('RegisterVisit')} />
-        
+        <QuickAction icon="📷" label="Escanear QR" onPress={() => navigation.navigate('ScanQR')} />
       </View>
     </ScrollView>
   );
