@@ -1,51 +1,46 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
-import { supabase, MOCK_MODE, mockSupabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setVisits, setLoading } from '../store/slices/visitSlice';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-interface Visitor {
-  id: string;
-  name: string;
-  id_number: string;
-  house: string;
-  created_at: string;
-}
-
 const VisitorsScreen = () => {
   const navigation = useNavigation<Nav>();
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+
+  // useSelector - accede al estado de Redux
+  const visits = useAppSelector(state => state.visits.list);
+  const loading = useAppSelector(state => state.visits.loading);
 
   useEffect(() => {
     fetchVisitors();
   }, []);
 
   const fetchVisitors = async () => {
-    setLoading(true);
-    if (MOCK_MODE) {
-      setVisitors([
-        { id: '1', name: 'Ana García', id_number: '2134 56789 0101', house: 'A-1', created_at: new Date().toISOString() },
-        { id: '2', name: 'Luis Pérez', id_number: '3001 12345 6789', house: 'B-12', created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: '3', name: 'María López', id_number: '1590 00011 2233', house: 'C-5', created_at: new Date(Date.now() - 7200000).toISOString() },
-      ]);
-      setLoading(false);
-      return;
-    }
+    dispatch(setLoading(true));
+    console.log('[Redux] VisitorsScreen - solicitando visitas a Supabase...');
+
     const { data, error } = await supabase
       .from('visits')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) Alert.alert('Error', error.message);
-    else setVisitors(data ?? []);
-    setLoading(false);
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      // useDispatch - actualiza el estado en Redux
+      dispatch(setVisits(data ?? []));
+      console.log('[Redux] VisitorsScreen - estado actualizado, total visitas:', data?.length);
+    }
+    dispatch(setLoading(false));
   };
 
-  const renderItem = ({ item }: { item: Visitor }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => navigation.navigate('VisitDetail', { visitId: item.id })}
@@ -73,7 +68,7 @@ const VisitorsScreen = () => {
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#2563EB" />
       ) : (
         <FlatList
-          data={visitors}
+          data={visits}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}

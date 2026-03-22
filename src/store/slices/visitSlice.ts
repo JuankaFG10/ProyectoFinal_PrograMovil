@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface Visit {
+// TIPOS
+export interface Visit {
   id: string;
   name: string;
   id_number: string;
@@ -22,23 +23,28 @@ const initialState: VisitsState = {
   error: null,
 };
 
+// SLICE CON REDUCERS
 const visitsSlice = createSlice({
   name: 'visits',
   initialState,
   reducers: {
     setVisits(state, action: PayloadAction<Visit[]>) {
+      console.log('[Redux] setVisits - cargando', action.payload.length, 'visitas al estado');
       state.list = action.payload;
     },
     addVisit(state, action: PayloadAction<Visit>) {
+      console.log('[Redux] addVisit - agregando visita:', action.payload.name);
       state.list.unshift(action.payload);
     },
     updateVisitStatus(state, action: PayloadAction<{ id: string; status: 'approved' | 'denied' }>) {
+      console.log('[Redux] updateVisitStatus - actualizando visita:', action.payload.id, '->', action.payload.status);
       const visit = state.list.find(v => v.id === action.payload.id);
       if (visit) {
         visit.status = action.payload.status;
       }
     },
     removeVisit(state, action: PayloadAction<string>) {
+      console.log('[Redux] removeVisit - eliminando visita:', action.payload);
       state.list = state.list.filter(v => v.id !== action.payload);
     },
     setLoading(state, action: PayloadAction<boolean>) {
