@@ -18,14 +18,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos.');
+      Alert.alert(t('error'), 'Por favor completa todos los campos.');
       return;
     }
     try {
       setLoading(true);
       await signIn(email, password);
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t('error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>🏘️</Text>
         <Text style={styles.heading}>Gate</Text>
-        <Text style={styles.sub}>Control de acceso residencial</Text>
+        <Text style={styles.sub}>{t('appSubtitle')}</Text>
 
         <CustomInput
           label={t('email')}
@@ -56,7 +56,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
         <CustomButton title={t('login')} onPress={handleLogin} loading={loading} />
         <CustomButton
-          title={t('register')}
+          title={t('noAccount')}
           onPress={() => navigation.navigate('Register')}
           variant="secondary"
         />

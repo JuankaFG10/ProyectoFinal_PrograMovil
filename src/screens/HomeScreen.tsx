@@ -7,19 +7,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setVisits, setLoading } from '../store/slices/visitSlice';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
 
-  // useSelector - lee el estado global de Redux
   const visits = useAppSelector(state => state.visits.list);
   const loading = useAppSelector(state => state.visits.loading);
 
-  // Calcular estadísticas desde el estado de Redux
   const today = new Date().toISOString().split('T')[0];
   const todayVisits = visits.filter(v => v.created_at.startsWith(today)).length;
   const totalVisits = visits.length;
@@ -38,7 +38,6 @@ const HomeScreen = () => {
       .order('created_at', { ascending: false });
 
     if (!error) {
-      // useDispatch - actualiza el estado global con todas las visitas
       dispatch(setVisits(data ?? []));
       console.log('[Redux] HomeScreen - estado global actualizado:', {
         total: data?.length,
@@ -57,24 +56,24 @@ const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.greeting}>Bienvenido 👋</Text>
+      <Text style={styles.greeting}>{t('welcome')} 👋</Text>
       <Text style={styles.email}>{user?.email}</Text>
 
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{todayVisits}</Text>
-          <Text style={styles.statLabel}>Hoy</Text>
+          <Text style={styles.statLabel}>{t('today')}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{totalVisits}</Text>
-          <Text style={styles.statLabel}>Total</Text>
+          <Text style={styles.statLabel}>{t('total')}</Text>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+      <Text style={styles.sectionTitle}>{t('quickActions')}</Text>
       <View style={styles.actionsGrid}>
-        <QuickAction icon="📝" label="Registrar Visita" onPress={() => navigation.navigate('RegisterVisit')} />
-        <QuickAction icon="📷" label="Escanear QR" onPress={() => navigation.navigate('ScanQR')} />
+        <QuickAction icon="📝" label={t('registerVisit')} onPress={() => navigation.navigate('RegisterVisit')} />
+        <QuickAction icon="📷" label={t('scanQR')} onPress={() => navigation.navigate('ScanQR')} />
       </View>
     </ScrollView>
   );
