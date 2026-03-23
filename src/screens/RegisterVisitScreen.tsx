@@ -7,10 +7,12 @@ import CustomInput from '../components/CustomInput';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch } from '../store/hooks';
 import { addVisit } from '../store/slices/visitSlice';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const RegisterVisitScreen = () => {
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [house, setHouse] = useState('');
@@ -21,7 +23,7 @@ const RegisterVisitScreen = () => {
 
   const handleRegister = async () => {
     if (!name || !idNumber || !house) {
-      Alert.alert('Error', 'Nombre, DPI y Casa son obligatorios.');
+      Alert.alert(t('error'), 'Nombre, DPI y Casa son obligatorios.');
       return;
     }
 
@@ -37,7 +39,6 @@ const RegisterVisitScreen = () => {
 
       if (error) throw error;
 
-      // useDispatch - agrega la visita al estado global de Redux
       dispatch(addVisit(data));
       console.log('[Redux] RegisterVisitScreen - visita agregada al estado global:', data.id);
 
@@ -45,7 +46,7 @@ const RegisterVisitScreen = () => {
       setQrValue(qrData);
       setShowQR(true);
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t('error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -53,25 +54,25 @@ const RegisterVisitScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text style={styles.subtitle}>Completa los datos del visitante</Text>
+      <Text style={styles.subtitle}>{t('completeData')}</Text>
 
-      <CustomInput label="Nombre Completo *" placeholder="Juan Pérez" value={name} onChangeText={setName} />
-      <CustomInput label="DPI / Identificación *" placeholder="0000 00000 0000" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
-      <CustomInput label="Casa / Lote *" placeholder="Ej: B-12" value={house} onChangeText={setHouse} autoCapitalize="characters" />
-      <CustomInput label="Motivo de visita" placeholder="Ej: Visita familiar" value={reason} onChangeText={setReason} />
+      <CustomInput label={t('fullName')} placeholder="Juan Pérez" value={name} onChangeText={setName} />
+      <CustomInput label={t('idNumber')} placeholder="0000 00000 0000" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
+      <CustomInput label={t('house')} placeholder="Ej: B-12" value={house} onChangeText={setHouse} autoCapitalize="characters" />
+      <CustomInput label={t('visitReason')} placeholder="Ej: Visita familiar" value={reason} onChangeText={setReason} />
 
-      <CustomButton title="Registrar y Generar QR" onPress={handleRegister} loading={loading} />
+      <CustomButton title={t('registerAndQR')} onPress={handleRegister} loading={loading} />
 
       <Modal visible={showQR} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>✅ Visita Registrada</Text>
-            <Text style={styles.modalSub}>Código QR de acceso para {name}</Text>
+            <Text style={styles.modalTitle}>{t('visitRegistered')}</Text>
+            <Text style={styles.modalSub}>{t('qrAccess')} {name}</Text>
             <View style={styles.qrBox}>
               <QRCode value={qrValue} size={200} />
             </View>
             <CustomButton
-              title="Listo"
+              title={t('done')}
               onPress={() => { setShowQR(false); navigation.goBack(); }}
             />
           </View>

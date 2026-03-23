@@ -3,16 +3,16 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-nativ
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setVisits, setLoading } from '../store/slices/visitSlice';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const HistoryScreen = () => {
   const dispatch = useAppDispatch();
+  const { t } = useLanguage();
 
-  // useSelector - lee las visitas directamente del estado global de Redux
   const visits = useAppSelector(state => state.visits.list);
   const loading = useAppSelector(state => state.visits.loading);
 
   useEffect(() => {
-    // Si ya hay datos en Redux no vuelve a consultar Supabase
     if (visits.length === 0) {
       fetchHistory();
     } else {
@@ -54,7 +54,7 @@ const HistoryScreen = () => {
       </View>
       <View style={[styles.badge, item.status === 'approved' ? styles.approved : styles.pending]}>
         <Text style={styles.badgeText}>
-          {item.status === 'approved' ? '✓ Aprobado' : '⏳ Pendiente'}
+          {item.status === 'approved' ? t('approved') : t('pending')}
         </Text>
       </View>
     </View>
@@ -62,7 +62,7 @@ const HistoryScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Historial de Visitas</Text>
+      <Text style={styles.title}>{t('visitHistory')}</Text>
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#2563EB" />
@@ -72,7 +72,7 @@ const HistoryScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<Text style={styles.empty}>Sin historial disponible.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{t('noHistory')}</Text>}
           onRefresh={fetchHistory}
           refreshing={loading}
         />
