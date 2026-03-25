@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import CustomButton from '../components/CustomButton';
 import { useAppDispatch } from '../store/hooks';
 import { updateVisitStatus } from '../store/slices/visitSlice';
+import { useNavigation } from '@react-navigation/native';
 
 interface VisitData {
   id: string;
@@ -18,6 +19,7 @@ const ScanQRScreen = () => {
   const [visitData, setVisitData] = useState<VisitData | null>(null);
   const [showModal, setShowModal] = useState(false);
   const dispatch = useAppDispatch();
+  const navigation = useNavigation();
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (scanned) return;
@@ -52,9 +54,10 @@ const ScanQRScreen = () => {
  const handleApprove = async () => {
   if (!visitData) return;
   await supabase.from('visits').update({ status: 'approved' }).eq('id', visitData.id);
-  // Actualiza el estado en Redux
   dispatch(updateVisitStatus({ id: visitData.id, status: 'approved' }));
-  Alert.alert('✅ Acceso Aprobado', `${visitData.name} puede ingresar a casa ${visitData.house}.`);
+  Alert.alert('✅ Acceso Aprobado', `${visitData.name} puede ingresar a casa ${visitData.house}.`, [
+    { text: 'OK', onPress: () => navigation.goBack() }
+  ]);
   setShowModal(false);
   setScanned(false);
   setVisitData(null);
@@ -63,9 +66,10 @@ const ScanQRScreen = () => {
 const handleDeny = async () => {
   if (!visitData) return;
   await supabase.from('visits').update({ status: 'denied' }).eq('id', visitData.id);
-  // Actualiza el estado en Redux
   dispatch(updateVisitStatus({ id: visitData.id, status: 'denied' }));
-  Alert.alert('❌ Acceso Denegado', `Visita de ${visitData.name} denegada.`);
+  Alert.alert('❌ Acceso Denegado', `Visita de ${visitData.name} denegada.`, [
+    { text: 'OK', onPress: () => navigation.goBack() }
+  ]);
   setShowModal(false);
   setScanned(false);
   setVisitData(null);

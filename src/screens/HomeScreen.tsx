@@ -9,10 +9,12 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setVisits, setLoading } from '../store/slices/visitSlice';
 import { useLanguage } from '../contexts/LanguageContext';
 
+
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
   const { user } = useAuth();
+  const { profile } = useAuth();
   const { t } = useLanguage();
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
@@ -71,10 +73,22 @@ const HomeScreen = () => {
       </View>
 
       <Text style={styles.sectionTitle}>{t('quickActions')}</Text>
-      <View style={styles.actionsGrid}>
-        <QuickAction icon="📝" label={t('registerVisit')} onPress={() => navigation.navigate('RegisterVisit')} />
-        <QuickAction icon="📷" label={t('scanQR')} onPress={() => navigation.navigate('ScanQR')} />
-      </View>
+<View style={styles.actionsGrid}>
+  {(profile?.role === 'residente' || profile?.role === 'admin') && (
+    <QuickAction
+      icon="📝"
+      label={t('registerVisit')}
+      onPress={() => navigation.navigate('RegisterVisit')}
+    />
+  )}
+  {(profile?.role === 'guardia' || profile?.role === 'admin') && (
+    <QuickAction
+      icon="📷"
+      label={t('scanQR')}
+      onPress={() => navigation.navigate('MainTabs', { screen: 'ScanQR' } as any)}
+    />
+  )}
+</View>
     </ScrollView>
   );
 };

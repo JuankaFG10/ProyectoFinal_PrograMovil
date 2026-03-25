@@ -22,7 +22,7 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const StackNavigator = () => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -42,16 +42,22 @@ const StackNavigator = () => {
       ) : (
         <>
           <Stack.Screen name="MainTabs" component={TabsNavigator} />
-          <Stack.Screen
-            name="RegisterVisit"
-            component={RegisterVisitScreen}
-            options={{ headerShown: true, title: 'Registrar Visita' }}
-          />
-          <Stack.Screen
-            name="ScanQR"
-            component={ScanQRScreen}
-            options={{ headerShown: true, title: 'Escanear QR' }}
-          />
+          {/* Solo residentes y admins pueden registrar visitas */}
+          {(profile?.role === 'residente' || profile?.role === 'admin') && (
+            <Stack.Screen
+              name="RegisterVisit"
+              component={RegisterVisitScreen}
+              options={{ headerShown: true, title: 'Registrar Visita' }}
+            />
+          )}
+          {/* Solo guardias y admins pueden escanear QR */}
+          {(profile?.role === 'guardia' || profile?.role === 'admin') && (
+            <Stack.Screen
+              name="ScanQR"
+              component={ScanQRScreen}
+              options={{ headerShown: true, title: 'Escanear QR' }}
+            />
+          )}
           <Stack.Screen
             name="VisitDetail"
             component={VisitDetailScreen}

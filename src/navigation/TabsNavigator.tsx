@@ -2,33 +2,38 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 import HomeScreen from '../screens/HomeScreen';
 import VisitorsScreen from '../screens/VisitorsScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ScanQRScreen from '../screens/ScanQRScreen';
 
 export type TabParamList = {
   Home: undefined;
   Visitors: undefined;
   History: undefined;
   Profile: undefined;
+  ScanQR: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const TabsNavigator = () => {
   const { t } = useLanguage();
+  const { profile } = useAuth();
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ size }) => {
           const icons: Record<string, string> = {
             Home: '🏠',
             Visitors: '👤',
             History: '📋',
             Profile: '⚙️',
+            ScanQR: '📷',
           };
           return <Text style={{ fontSize: size - 4 }}>{icons[route.name]}</Text>;
         },
@@ -44,7 +49,17 @@ const TabsNavigator = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('welcome') }} />
-      <Tab.Screen name="Visitors" component={VisitorsScreen} options={{ title: t('visitors') }} />
+
+      {/* Residentes y Admin ven visitantes */}
+      {(profile?.role === 'residente' || profile?.role === 'admin') && (
+        <Tab.Screen name="Visitors" component={VisitorsScreen} options={{ title: t('visitors') }} />
+      )}
+
+      {/* Guardias y Admin ven el escáner QR en tabs */}
+      {(profile?.role === 'guardia' || profile?.role === 'admin') && (
+        <Tab.Screen name="ScanQR" component={ScanQRScreen} options={{ title: t('scanQR') }} />
+      )}
+
       <Tab.Screen name="History" component={HistoryScreen} options={{ title: t('visitHistory') }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('profile') }} />
     </Tab.Navigator>
