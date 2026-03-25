@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, Modal } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Alert, Modal, Image, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import CustomButton from '../components/CustomButton';
 import { useAppDispatch } from '../store/hooks';
@@ -18,6 +19,8 @@ const ScanQRScreen = () => {
   const [scanned, setScanned] = useState(false);
   const [visitData, setVisitData] = useState<VisitData | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
 
@@ -28,7 +31,6 @@ const ScanQRScreen = () => {
     try {
       const parsed: VisitData = JSON.parse(data);
 
-      // Verify visit exists in Supabase
       const { data: visit, error } = await supabase
         .from('visits')
         .select('*')
@@ -43,6 +45,7 @@ const ScanQRScreen = () => {
       }
 
       setVisitData(visit);
+      setPhotoUri(null);
       setShowModal(true);
     } catch {
       Alert.alert('Error', 'El código QR no es válido.', [
@@ -51,29 +54,90 @@ const ScanQRScreen = () => {
     }
   };
 
- const handleApprove = async () => {
+  const takeIdPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Error', 'Se necesita permiso de cámara.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setPhotoUri(result.assets[0].uri);
+      console.log('[Camera] Foto del DPI tomada');
+    }
+  };
+
+  const uploadPhoto = async (uri: string, visitId: string): Promise<string | null> => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const fileName = `${visitId}.jpg`;
+
+      const { error } = await supabase.storage
+        .from('visit-photos')
+        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (error) {
+        console.log('[Storage] Error subiendo foto:', error.message);
+        return null;
+      }
+
+      const { data } = supabase.storage.from('visit-photos').getPublicUrl(fileName);
+      console.log('[Storage] Foto subida:', data.publicUrl);
+      return data.publicUrl;
+    } catch (e) {
+      console.log('[Storage] Error:', e);
+      return null;
+    }
+  };
+
+  const handleApprove = async () => {
   if (!visitData) return;
+
+  // Verificar que se tomó foto del DPI
+  if (!photoUri) {
+    Alert.alert('Foto requerida', 'Debes tomar foto del ID antes de aprobar el acceso.');
+    return;
+  }
+
+  setUploading(true);
+
+  const photoUrl = await uploadPhoto(photoUri, visitData.id);
+  if (photoUrl) {
+    await supabase.from('visits').update({ photo_url: photoUrl }).eq('id', visitData.id);
+  }
+
   await supabase.from('visits').update({ status: 'approved' }).eq('id', visitData.id);
   dispatch(updateVisitStatus({ id: visitData.id, status: 'approved' }));
+  setUploading(false);
+
   Alert.alert('✅ Acceso Aprobado', `${visitData.name} puede ingresar a casa ${visitData.house}.`, [
     { text: 'OK', onPress: () => navigation.goBack() }
   ]);
   setShowModal(false);
   setScanned(false);
   setVisitData(null);
+  setPhotoUri(null);
 };
 
-const handleDeny = async () => {
-  if (!visitData) return;
-  await supabase.from('visits').update({ status: 'denied' }).eq('id', visitData.id);
-  dispatch(updateVisitStatus({ id: visitData.id, status: 'denied' }));
-  Alert.alert('❌ Acceso Denegado', `Visita de ${visitData.name} denegada.`, [
-    { text: 'OK', onPress: () => navigation.goBack() }
-  ]);
-  setShowModal(false);
-  setScanned(false);
-  setVisitData(null);
-};
+  const handleDeny = async () => {
+    if (!visitData) return;
+    await supabase.from('visits').update({ status: 'denied' }).eq('id', visitData.id);
+    dispatch(updateVisitStatus({ id: visitData.id, status: 'denied' }));
+
+    Alert.alert('❌ Acceso Denegado', `Visita de ${visitData.name} denegada.`, [
+      { text: 'OK', onPress: () => navigation.goBack() }
+    ]);
+    setShowModal(false);
+    setScanned(false);
+    setVisitData(null);
+    setPhotoUri(null);
+  };
 
   if (!permission) return <View />;
 
@@ -106,9 +170,22 @@ const handleDeny = async () => {
             <Text style={styles.modalTitle}>👤 Visitante Detectado</Text>
             <Text style={styles.modalName}>{visitData?.name}</Text>
             <Text style={styles.modalMeta}>🏠 Casa {visitData?.house}</Text>
+
+            {/* Foto del DPI */}
+            <TouchableOpacity style={styles.photoBtn} onPress={takeIdPhoto}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+              ) : (
+                <View style={styles.photoPlaceholder}>
+                  <Text style={styles.photoIcon}>🪪</Text>
+                  <Text style={styles.photoText}>Tomar foto del ID (obligatorio)</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
             <View style={styles.btnRow}>
               <View style={{ flex: 1 }}>
-                <CustomButton title="✅ Aprobar" onPress={handleApprove} />
+                <CustomButton title="✅ Aprobar" onPress={handleApprove} loading={uploading} />
               </View>
               <View style={{ flex: 1 }}>
                 <CustomButton title="❌ Denegar" onPress={handleDeny} variant="danger" />
@@ -133,7 +210,16 @@ const styles = StyleSheet.create({
   modalCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 28 },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 12 },
   modalName: { fontSize: 22, fontWeight: '800', color: '#2563EB' },
-  modalMeta: { fontSize: 15, color: '#64748B', marginBottom: 24 },
+  modalMeta: { fontSize: 15, color: '#64748B', marginBottom: 16 },
+  photoBtn: { marginBottom: 16 },
+  photoPreview: { width: '100%', height: 160, borderRadius: 12 },
+  photoPlaceholder: {
+    width: '100%', height: 120, borderRadius: 12, borderWidth: 2,
+    borderColor: '#CBD5E1', borderStyle: 'dashed', backgroundColor: '#F8FAFC',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  photoIcon: { fontSize: 28, marginBottom: 6 },
+  photoText: { fontSize: 13, color: '#94A3B8' },
   btnRow: { flexDirection: 'row', gap: 12 },
 });
 
