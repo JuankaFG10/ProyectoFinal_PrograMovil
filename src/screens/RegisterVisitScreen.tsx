@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, Alert, ScrollView, Modal } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import * as Sharing from 'expo-sharing';
+import * as FS from 'expo-file-system/legacy';
 import { supabase } from '../lib/supabase';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
@@ -19,6 +21,8 @@ const RegisterVisitScreen = () => {
   const [loading, setLoading] = useState(false);
   const [qrValue, setQrValue] = useState('');
   const [showQR, setShowQR] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const svgRef = useRef<any>(null);
 
   const handleRegister = async () => {
     if (!name || !idNumber || !house) {
@@ -51,6 +55,42 @@ const RegisterVisitScreen = () => {
     }
   };
 
+  const handleShare = async () => {
+  try {
+    setSharing(true);
+
+    svgRef.current?.toDataURL(async (data: string) => {
+      try {
+        const legacy = require('expo-file-system/legacy');
+        const cacheDir = legacy.cacheDirectory;
+        console.log('[Share] cacheDirectory:', cacheDir);
+        
+        const fileUri = cacheDir + 'qr_visita.png';
+        
+        await legacy.writeAsStringAsync(fileUri, data, {
+          encoding: legacy.EncodingType.Base64,
+        });
+
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'image/png',
+            dialogTitle: `QR de acceso para ${name}`,
+          });
+        } else {
+          Alert.alert('Error', 'Compartir no está disponible en este dispositivo.');
+        }
+      } catch (e) {
+        console.log('[Share] Error interno:', e);
+      }
+      setSharing(false);
+    });
+  } catch (e) {
+    console.log('[Share] Error:', e);
+    setSharing(false);
+  }
+};
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.subtitle}>{t('completeData')}</Text>
@@ -67,8 +107,18 @@ const RegisterVisitScreen = () => {
             <Text style={styles.modalTitle}>{t('visitRegistered')}</Text>
             <Text style={styles.modalSub}>{t('qrAccess')} {name}</Text>
             <View style={styles.qrBox}>
-              <QRCode value={qrValue} size={200} />
+              <QRCode
+                value={qrValue}
+                size={200}
+                getRef={(ref) => (svgRef.current = ref)}
+              />
             </View>
+            <CustomButton
+              title="📤 Compartir QR"
+              onPress={handleShare}
+              loading={sharing}
+              variant="secondary"
+            />
             <CustomButton
               title={t('done')}
               onPress={() => { setShowQR(false); navigation.goBack(); }}
@@ -88,7 +138,7 @@ const styles = StyleSheet.create({
   modalCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 28, alignItems: 'center', width: '100%' },
   modalTitle: { fontSize: 20, fontWeight: '700', color: '#1E293B', marginBottom: 6 },
   modalSub: { fontSize: 14, color: '#64748B', marginBottom: 24, textAlign: 'center' },
-  qrBox: { padding: 16, backgroundColor: '#F8FAFC', borderRadius: 12, marginBottom: 24 },
+  qrBox: { padding: 16, backgroundColor: '#F8FAFC', borderRadius: 12, marginBottom: 16 },
 });
 
 export default RegisterVisitScreen;
