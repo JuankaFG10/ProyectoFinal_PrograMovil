@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 
 interface Profile {
   id: string;
@@ -16,7 +18,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, role: string) => Promise<void>;
+  signUp: (email: string, password: string, role: string, house?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -46,6 +48,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  const registerForPushNotifications = async (userId: string) => {
+    if (!Device.isDevice) {
+      console.log('[Notifications] No es dispositivo físico, saltando...');
+      return;
+    }
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('[Notifications] Permiso denegado');
+      return;
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log('[Notifications] Token registrado:', token);
+
+    await supabase.from('profiles').update({ push_token: token }).eq('id', userId);
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -57,6 +84,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfile(data);
       console.log('[Auth] Perfil cargado:', data.email, '- Rol:', data.role);
     }
+
+    await registerForPushNotifications(userId);
     setLoading(false);
   };
 
@@ -65,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, role: string = 'residente') => {
+  const signUp = async (email: string, password: string, role: string = 'residente', house: string = '') => {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
 
@@ -73,11 +102,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ role })
+      .update({ role, house: house || null })
       .eq('id', data.user.id);
     console.log('[Auth] Rol actualizado a:', role, updateError ? updateError.message : 'OK');
-    
-    // Recarga el perfil para que las tabs se actualicen
+
     await fetchProfile(data.user.id);
   }
 };

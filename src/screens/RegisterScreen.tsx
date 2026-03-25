@@ -15,6 +15,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [house, setHouse] = useState('');
   const [role, setRole] = useState<'residente' | 'guardia' | 'admin'>('residente');
   const [loading, setLoading] = useState(false);
 
@@ -27,9 +28,13 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Error', 'Las contraseñas no coinciden.');
       return;
     }
+    if (role === 'residente' && !house) {
+      Alert.alert('Error', 'El número de casa es obligatorio para residentes.');
+      return;
+    }
     try {
       setLoading(true);
-      await signUp(email, password, role);
+      await signUp(email, password, role, house);
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -79,6 +84,16 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           ))}
         </View>
+
+        {role === 'residente' && (
+          <CustomInput
+            label="Número de Casa *"
+            placeholder="Ej: B-12"
+            value={house}
+            onChangeText={setHouse}
+            autoCapitalize="characters"
+          />
+        )}
 
         <CustomButton title={t('register')} onPress={handleRegister} loading={loading} />
         <CustomButton
