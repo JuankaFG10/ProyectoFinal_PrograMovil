@@ -48,10 +48,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string) => {
-    if (MOCK_MODE) { setUser({ id: 'mock-user-id', email } as User); return; }
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-  };
+  console.log('[Auth] Intentando registrar:', email);
+  const { error, data } = await supabase.auth.signUp({ email, password });
+  console.log('[Auth] Respuesta signUp:', JSON.stringify(data), JSON.stringify(error));
+  if (error) throw error;
+};
 
   const signOut = async () => {
     if (MOCK_MODE) { setUser(null); return; }

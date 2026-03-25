@@ -59,7 +59,7 @@ const RegisterVisitScreen = () => {
       <CustomInput label={t('fullName')} placeholder="Juan Pérez" value={name} onChangeText={setName} />
       <CustomInput label={t('idNumber')} placeholder="0000 00000 0000" value={idNumber} onChangeText={setIdNumber} keyboardType="numeric" />
       <CustomInput label={t('house')} placeholder="Ej: B-12" value={house} onChangeText={setHouse} autoCapitalize="characters" />
-      <CustomInput label={t('visitReason')} placeholder="Ej: Visita familiar" value={reason} onChangeText={setReason} />
+      
 
       <CustomButton title={t('registerAndQR')} onPress={handleRegister} loading={loading} />
 

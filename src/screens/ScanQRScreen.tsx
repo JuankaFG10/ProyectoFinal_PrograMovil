@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Alert, Modal } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { supabase } from '../lib/supabase';
 import CustomButton from '../components/CustomButton';
+import { useAppDispatch } from '../store/hooks';
+import { updateVisitStatus } from '../store/slices/visitSlice';
 
 interface VisitData {
   id: string;
@@ -15,6 +17,7 @@ const ScanQRScreen = () => {
   const [scanned, setScanned] = useState(false);
   const [visitData, setVisitData] = useState<VisitData | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const dispatch = useAppDispatch();
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (scanned) return;
@@ -46,21 +49,27 @@ const ScanQRScreen = () => {
     }
   };
 
-  const handleApprove = async () => {
-    if (!visitData) return;
-    await supabase.from('visits').update({ status: 'approved' }).eq('id', visitData.id);
-    Alert.alert('✅ Acceso Aprobado', `${visitData.name} puede ingresar a casa ${visitData.house}.`);
-    setShowModal(false);
-    setScanned(false);
-  };
+ const handleApprove = async () => {
+  if (!visitData) return;
+  await supabase.from('visits').update({ status: 'approved' }).eq('id', visitData.id);
+  // Actualiza el estado en Redux
+  dispatch(updateVisitStatus({ id: visitData.id, status: 'approved' }));
+  Alert.alert('✅ Acceso Aprobado', `${visitData.name} puede ingresar a casa ${visitData.house}.`);
+  setShowModal(false);
+  setScanned(false);
+  setVisitData(null);
+};
 
-  const handleDeny = async () => {
-    if (!visitData) return;
-    await supabase.from('visits').update({ status: 'denied' }).eq('id', visitData.id);
-    Alert.alert('❌ Acceso Denegado', `Visita de ${visitData.name} denegada.`);
-    setShowModal(false);
-    setScanned(false);
-  };
+const handleDeny = async () => {
+  if (!visitData) return;
+  await supabase.from('visits').update({ status: 'denied' }).eq('id', visitData.id);
+  // Actualiza el estado en Redux
+  dispatch(updateVisitStatus({ id: visitData.id, status: 'denied' }));
+  Alert.alert('❌ Acceso Denegado', `Visita de ${visitData.name} denegada.`);
+  setShowModal(false);
+  setScanned(false);
+  setVisitData(null);
+};
 
   if (!permission) return <View />;
 

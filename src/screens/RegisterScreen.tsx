@@ -18,25 +18,24 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!email || !password || !confirm) {
-      Alert.alert('Error', 'Por favor completa todos los campos.');
-      return;
-    }
-    if (password !== confirm) {
-      Alert.alert('Error', 'Las contraseñas no coinciden.');
-      return;
-    }
-    try {
-      setLoading(true);
-      await signUp(email, password);
-      Alert.alert('Éxito', 'Cuenta creada. Revisa tu correo para confirmar.');
-      navigation.navigate('Login');
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!email || !password || !confirm) {
+    Alert.alert('Error', 'Por favor completa todos los campos.');
+    return;
+  }
+  if (password !== confirm) {
+    Alert.alert('Error', 'Las contraseñas no coinciden.');
+    return;
+  }
+  try {
+    setLoading(true);
+    await signUp(email, password);
+    // No navegamos, el AuthContext detecta la sesión automáticamente
+  } catch (error: any) {
+    Alert.alert('Error', error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
