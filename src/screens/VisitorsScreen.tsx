@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setVisits, setLoading } from '../store/slices/visitSlice';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -16,6 +17,7 @@ const VisitorsScreen = () => {
   const dispatch = useAppDispatch();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const { user, profile } = useAuth();
 
   const visits = useAppSelector(state => state.visits.list);
   const loading = useAppSelector(state => state.visits.loading);
@@ -25,22 +27,32 @@ const VisitorsScreen = () => {
   }, []);
 
   const fetchVisitors = async () => {
-    dispatch(setLoading(true));
-    console.log('[Redux] VisitorsScreen - solicitando visitas a Supabase...');
+  dispatch(setLoading(true));
+  console.log('[Redux] VisitorsScreen - solicitando visitas...');
 
-    const { data, error } = await supabase
-      .from('visits')
-      .select('*')
-      .order('created_at', { ascending: false });
+  let query = supabase
+    .from('visits')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-    if (error) {
-      Alert.alert(t('error'), error.message);
-    } else {
-      dispatch(setVisits(data ?? []));
-      console.log('[Redux] VisitorsScreen - estado actualizado, total visitas:', data?.length);
-    }
-    dispatch(setLoading(false));
-  };
+  // Admin ve todas, residente solo las suyas
+  if (profile?.role === 'residente') {
+    query = query.eq('user_id', user?.id);
+  }
+
+  const { data, error } = await supabase
+    .from('visits')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    Alert.alert(t('error'), error.message);
+  } else {
+    dispatch(setVisits(data ?? []));
+    console.log('[Redux] VisitorsScreen - estado actualizado, total visitas:', data?.length);
+  }
+  dispatch(setLoading(false));
+};
 
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity

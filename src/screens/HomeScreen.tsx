@@ -33,23 +33,27 @@ const HomeScreen = () => {
   }, []);
 
   const fetchVisits = async () => {
-    dispatch(setLoading(true));
-    console.log('[Redux] HomeScreen - cargando visitas al estado global...');
+  dispatch(setLoading(true));
+  console.log('[Redux] HomeScreen - cargando visitas del usuario...');
 
-    const { data, error } = await supabase
-      .from('visits')
-      .select('*')
-      .order('created_at', { ascending: false });
+  let query = supabase
+    .from('visits')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-    if (!error) {
-      dispatch(setVisits(data ?? []));
-      console.log('[Redux] HomeScreen - estado global actualizado:', {
-        total: data?.length,
-        hoy: data?.filter(v => v.created_at.startsWith(today)).length,
-      });
-    }
-    dispatch(setLoading(false));
-  };
+  // Admin ve todas, residente solo las suyas
+  if (profile?.role === 'residente') {
+    query = query.eq('user_id', user?.id);
+  }
+
+  const { data, error } = await query;
+
+  if (!error) {
+    dispatch(setVisits(data ?? []));
+    console.log('[Redux] HomeScreen - visitas cargadas:', data?.length);
+  }
+  dispatch(setLoading(false));
+};
 
   const QuickAction = ({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) => (
     <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.8}>

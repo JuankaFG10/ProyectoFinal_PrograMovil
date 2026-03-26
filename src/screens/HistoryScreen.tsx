@@ -5,39 +5,44 @@ import { setVisits, setLoading } from '../store/slices/visitSlice';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
 
 const HistoryScreen = () => {
   const dispatch = useAppDispatch();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const { user, profile } = useAuth();
 
   const visits = useAppSelector(state => state.visits.list);
   const loading = useAppSelector(state => state.visits.loading);
 
   useEffect(() => {
-    if (visits.length === 0) {
-      fetchHistory();
-    } else {
-      console.log('[Redux] HistoryScreen - datos ya en estado global, no se consulta Supabase:', visits.length, 'visitas');
-    }
-  }, []);
+  fetchHistory();
+}, []);
 
   const fetchHistory = async () => {
-    dispatch(setLoading(true));
-    console.log('[Redux] HistoryScreen - estado vacío, consultando Supabase...');
+  dispatch(setLoading(true));
+  console.log('[Redux] HistoryScreen - consultando Supabase...');
 
-    const { data, error } = await supabase
-      .from('visits')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
+  let query = supabase
+    .from('visits')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
 
-    if (!error) {
-      dispatch(setVisits(data ?? []));
-      console.log('[Redux] HistoryScreen - estado global actualizado con', data?.length, 'visitas');
-    }
-    dispatch(setLoading(false));
-  };
+  // Admin ve todas, residente solo las suyas
+  if (profile?.role === 'residente') {
+    query = query.eq('user_id', user?.id);
+  }
+
+  const { data, error } = await query;
+
+  if (!error) {
+    dispatch(setVisits(data ?? []));
+    console.log('[Redux] HistoryScreen - estado global actualizado con', data?.length, 'visitas');
+  }
+  dispatch(setLoading(false));
+};
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);

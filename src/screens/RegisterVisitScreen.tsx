@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch } from '../store/hooks';
 import { addVisit } from '../store/slices/visitSlice';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const RegisterVisitScreen = () => {
   const navigation = useNavigation();
@@ -23,6 +24,7 @@ const RegisterVisitScreen = () => {
   const [showQR, setShowQR] = useState(false);
   const [sharing, setSharing] = useState(false);
   const svgRef = useRef<any>(null);
+  const { user } = useAuth();
 
   const handleRegister = async () => {
     if (!name || !idNumber || !house) {
@@ -35,10 +37,10 @@ const RegisterVisitScreen = () => {
       console.log('[Redux] RegisterVisitScreen - registrando nueva visita:', name);
 
       const { data, error } = await supabase
-        .from('visits')
-        .insert([{ name, id_number: idNumber, house, status: 'pending' }])
-        .select()
-        .single();
+      .from('visits')
+      .insert([{ name, id_number: idNumber, house, status: 'pending', user_id: user?.id }])
+      .select()
+      .single();
 
       if (error) throw error;
 
