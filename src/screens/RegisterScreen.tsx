@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,7 +16,6 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [house, setHouse] = useState('');
-  const [role, setRole] = useState<'residente' | 'guardia' | 'admin'>('residente');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -28,13 +27,13 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Error', 'Las contraseñas no coinciden.');
       return;
     }
-    if (role === 'residente' && !house) {
-      Alert.alert('Error', 'El número de casa es obligatorio para residentes.');
+    if (!house) {
+      Alert.alert('Error', 'El número de casa es obligatorio.');
       return;
     }
     try {
       setLoading(true);
-      await signUp(email, password, role, house);
+      await signUp(email, password, 'residente', house);
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -69,31 +68,13 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           onChangeText={setConfirm}
           secureTextEntry
         />
-
-        <Text style={styles.roleLabel}>Tipo de usuario</Text>
-        <View style={styles.roleRow}>
-          {(['residente', 'guardia'] as const).map((r) => (
-            <TouchableOpacity
-              key={r}
-              style={[styles.roleBtn, role === r && styles.roleActive]}
-              onPress={() => setRole(r)}
-            >
-              <Text style={[styles.roleText, role === r && styles.roleActiveText]}>
-                {r === 'residente' ? '🏠 Residente' : r === 'guardia' ? '👮 Guardia' : '⚙️ Admin'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {role === 'residente' && (
-          <CustomInput
-            label="Número de Casa *"
-            placeholder="Ej: B-12"
-            value={house}
-            onChangeText={setHouse}
-            autoCapitalize="characters"
-          />
-        )}
+        <CustomInput
+          label="Número de Casa *"
+          placeholder="Ej: B-12"
+          value={house}
+          onChangeText={setHouse}
+          autoCapitalize="characters"
+        />
 
         <CustomButton title={t('register')} onPress={handleRegister} loading={loading} />
         <CustomButton
@@ -110,15 +91,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F1F5F9' },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   heading: { fontSize: 26, fontWeight: '700', textAlign: 'center', color: '#1E293B', marginBottom: 28 },
-  roleLabel: { fontSize: 14, fontWeight: '500', color: '#334155', marginTop: 8, marginBottom: 8 },
-  roleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  roleBtn: {
-    flex: 1, padding: 10, borderRadius: 10, backgroundColor: '#FFFFFF',
-    alignItems: 'center', borderWidth: 1.5, borderColor: '#E2E8F0',
-  },
-  roleActive: { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
-  roleText: { fontSize: 12, color: '#64748B', fontWeight: '500' },
-  roleActiveText: { color: '#2563EB', fontWeight: '700' },
 });
 
 export default RegisterScreen;
