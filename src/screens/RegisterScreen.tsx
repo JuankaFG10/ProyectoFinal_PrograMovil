@@ -72,7 +72,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
         <Text style={styles.roleLabel}>Tipo de usuario</Text>
         <View style={styles.roleRow}>
-          {(['residente', 'guardia', 'admin'] as const).map((r) => (
+          {(['residente', 'guardia'] as const).map((r) => (
             <TouchableOpacity
               key={r}
               style={[styles.roleBtn, role === r && styles.roleActive]}
