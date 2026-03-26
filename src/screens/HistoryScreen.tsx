@@ -4,10 +4,12 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setVisits, setLoading } from '../store/slices/visitSlice';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HistoryScreen = () => {
   const dispatch = useAppDispatch();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const visits = useAppSelector(state => state.visits.list);
   const loading = useAppSelector(state => state.visits.loading);
@@ -61,7 +63,7 @@ const HistoryScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Text style={styles.title}>{t('visitHistory')}</Text>
 
       {loading ? (

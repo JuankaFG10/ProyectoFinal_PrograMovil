@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setVisits, setLoading } from '../store/slices/visitSlice';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -14,6 +15,7 @@ const VisitorsScreen = () => {
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const visits = useAppSelector(state => state.visits.list);
   const loading = useAppSelector(state => state.visits.loading);
@@ -56,7 +58,7 @@ const VisitorsScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('visitors')}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('RegisterVisit')}>

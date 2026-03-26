@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setVisits, setLoading } from '../store/slices/visitSlice';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -18,6 +19,7 @@ const HomeScreen = () => {
   const { t } = useLanguage();
   const navigation = useNavigation<Nav>();
   const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
 
   const visits = useAppSelector(state => state.visits.list);
   const loading = useAppSelector(state => state.visits.loading);
@@ -57,7 +59,7 @@ const HomeScreen = () => {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.greeting}>{t('welcome')} 👋</Text>
       <Text style={styles.email}>{user?.email}</Text>
 
