@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import CustomButton from '../components/CustomButton';
+
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
@@ -38,15 +39,16 @@ const ProfileScreen = () => {
         <Text style={styles.sectionTitle}>Idioma</Text>
         <View style={styles.langRow}>
           {['es', 'en'].map((lang) => (
-            <View key={lang} style={[styles.langBtn, locale === lang && styles.langActive]}>
-              <Text
-                style={[styles.langText, locale === lang && styles.langActiveText]}
-                onPress={() => setLocale(lang)}
-              >
-                {lang === 'es' ? 'Español' : 'English'}
-              </Text>
-            </View>
-          ))}
+  <TouchableOpacity
+    key={lang}
+    style={[styles.langBtn, locale === lang && styles.langActive]}
+    onPress={() => setLocale(lang)}
+  >
+    <Text style={[styles.langText, locale === lang && styles.langActiveText]}>
+      {lang === 'es' ? 'Español' : 'English'}
+    </Text>
+  </TouchableOpacity>
+))}
         </View>
       </View>
 
